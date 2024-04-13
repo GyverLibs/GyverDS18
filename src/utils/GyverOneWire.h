@@ -2,15 +2,15 @@
 #include <Arduino.h>
 #include <GyverIO.h>
 
-#define GWIRE_RESET_WAIT 550
-#define GWIRE_WAIT_FRAME 50
+#define GWIRE_RESET_WAIT 500
+#define GWIRE_WAIT_FRAME 70
 
-#define GWIRE_WRITE_DEL 5
-#define GWIRE_WRITE_SLOT 80
+#define GWIRE_WRITE_WAIT 10
+#define GWIRE_WRITE_SLOT 70
 
-#define GWIRE_READ_DEL 2
-#define GWIRE_READ_WAIT 8
-#define GWIRE_READ_SLOT 80
+#define GWIRE_READ_DEL 3
+#define GWIRE_READ_WAIT 10
+#define GWIRE_READ_SLOT 70
 
 #define GWIRE_DELAY(us) delayMicroseconds(us)
 #define GWIRE_CLI() noInterrupts()
@@ -33,17 +33,13 @@ class GyverOneWire {
         _write(0);
         GWIRE_DELAY(GWIRE_RESET_WAIT);
 
-        _write(1);
         GWIRE_CLI();  // cli
-        GWIRE_DELAY(10);
+        _write(1);
+        GWIRE_DELAY(GWIRE_WAIT_FRAME);
+        bool ok = !gio::read(_pin);
+        GWIRE_SEI();  // sei
 
-        bool ok = 0;
-        uint8_t count = GWIRE_RESET_WAIT / GWIRE_WAIT_FRAME;
-        while (count--) {
-            if (!ok && !gio::read(_pin)) ok = 1;
-            GWIRE_DELAY(GWIRE_WAIT_FRAME);
-            GWIRE_SEI();  // sei
-        }
+        GWIRE_DELAY(GWIRE_RESET_WAIT - GWIRE_WAIT_FRAME);
         return ok;
     }
 
@@ -52,13 +48,17 @@ class GyverOneWire {
         for (uint8_t i = 0; i < 8; i++) {
             GWIRE_CLI();
             _write(0);
-            GWIRE_DELAY(GWIRE_WRITE_DEL);
-
-            if (data & 1) _write(1);
-            GWIRE_SEI();
-            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_DEL);
-
-            _write(1);
+            if (data & 1) {
+                GWIRE_DELAY(GWIRE_WRITE_WAIT);
+                _write(1);
+                GWIRE_SEI();
+                GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+            } else {
+                GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+                _write(1);
+                GWIRE_SEI();
+                GWIRE_DELAY(GWIRE_WRITE_WAIT);
+            }
             data >>= 1;
         }
         GWIRE_DELAY(1);
