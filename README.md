@@ -158,6 +158,24 @@ bool copyRAM(uint8_t index);
 bool recallRAM(uint8_t index);
 ```
 
+### Дополнительные функции
+```cpp
+// прочитать разрешение из внешнего буфера (5 байт)
+uint8_t gds::calcResolution(uint8_t* buf);
+
+// прочитать температуру из внешнего буфера (5 байт)
+int16_t gds::calcTemp(uint8_t* buf);
+
+// копировать адрес в буфер размером 8
+void gds::copyAddress(uint64_t address, uint8_t* buf);
+
+// вывести адрес в Print
+void gds::printAddress(uint64_t address, Print& p, bool newline = true);
+
+// вывести адрес в String
+String gds::addressToString(uint64_t address);
+```
+
 ### Один датчик
 Для работы с одним датчиком на пине используется класс `GyverDS18Single`. Температура получается в четыре этапа:
 - Запросить температуру `requestTemp()`
@@ -351,6 +369,7 @@ Serial.println(gds::calcResolution(buf));   // вывести разрешени
 ## Версии
 - v1.0
 - v1.0.3 - поправлены тайминги для китайских датчиков
+- v1.1.0 - оптимизация работы с uint64, добавлены фичи
 
 <a id="install"></a>
 ## Установка

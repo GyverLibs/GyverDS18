@@ -92,6 +92,7 @@ class GyverOneWire {
 
     // переключить активный выход для паразитного питания
     void pullup(bool state) {
+        if (_pulled == state) return;
         if (state) {
             gio::write(_pin, HIGH);
             gio::mode(_pin, OUTPUT);
@@ -99,10 +100,12 @@ class GyverOneWire {
             gio::mode(_pin, INPUT);
             gio::write(_pin, LOW);
         }
+        _pulled = state;
     }
 
    private:
     uint8_t _pin = 0xff;
+    bool _pulled = 0;
 
     void _write(bool v) {
         if (v) gio::mode(_pin, INPUT);

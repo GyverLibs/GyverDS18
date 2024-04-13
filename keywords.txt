@@ -20,6 +20,7 @@ calcResolution	KEYWORD2
 calcTemp	KEYWORD2
 copyAddress	KEYWORD2
 printAddress	KEYWORD2
+addressToString	KEYWORD2
 
 # GyverDS18Single
 setPin	KEYWORD2

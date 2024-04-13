@@ -68,13 +68,14 @@ class GyverDS18Single : public GyverOneWire {
         if (!reset()) return 0;
         write(DS18_ADDR_READ);
         uint8_t crc = 0;
-        uint64_t addr = 0;
-        for (uint8_t i = 0; i < 8; i++) {
+        gds::buf64 addr{0};
+        uint8_t i = 8;
+        while (i--) {
             uint8_t r = read();
-            addr = (addr << 8) | r;
+            addr.u8[i] = r;
             _crc8(crc, r);
         }
-        return crc ? 0 : addr;
+        return crc ? 0 : addr.u64;
     }
 
     // прочитать питание: DS18_PARASITE - паразитное, DS18_EXTERNAL - обычное, 0 - ошибка

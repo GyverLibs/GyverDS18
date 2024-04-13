@@ -86,14 +86,14 @@ class GyverDS18 : protected GyverDS18Single {
 
     // ===================== PRIVATE =====================
    private:
-    bool _beginAddr(uint64_t addr) {
+    bool _beginAddr(const uint64_t& address) {
         if (_parasite) pullup(false);
         if (!reset()) return 0;
 
         write(DS18_ADDR_MATCH);
+        gds::buf64 addr{address};
         for (uint8_t i = 0; i < 8; i++) {
-            write(addr);
-            addr >>= 8;
+            write(addr.u8[i]);
         }
         return 1;
     }
