@@ -50,12 +50,12 @@ class GyverOneWire {
     // записать байт
     bool write(uint8_t data) {
         for (uint8_t i = 0; i < 8; i++) {
-            _write(0);
             GWIRE_CLI();
+            _write(0);
             GWIRE_DELAY(GWIRE_WRITE_DEL);
-            GWIRE_SEI();
 
             if (data & 1) _write(1);
+            GWIRE_SEI();
             GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_DEL);
 
             _write(1);
@@ -67,15 +67,15 @@ class GyverOneWire {
 
     // прочитать бит
     bool readBit() {
-        _write(0);
         GWIRE_CLI();  // cli
+        _write(0);
         GWIRE_DELAY(GWIRE_READ_DEL);
 
         _write(1);
         GWIRE_DELAY(GWIRE_READ_WAIT);
+        bool b = gio::read(_pin);
         GWIRE_SEI();  // sei
 
-        bool b = gio::read(_pin);
         GWIRE_DELAY(GWIRE_READ_SLOT - GWIRE_READ_DEL - GWIRE_READ_WAIT);
         return b;
     }
