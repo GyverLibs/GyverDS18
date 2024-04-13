@@ -89,6 +89,9 @@ bool ready();
 // true - температура готова (ждать)
 bool waitReady();
 
+// true - идёт ожидание конвертации
+bool isWaiting();
+
 // прочитать температуру
 bool readTemp();
 

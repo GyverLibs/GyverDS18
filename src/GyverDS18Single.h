@@ -105,6 +105,11 @@ class GyverDS18Single : public GyverOneWire {
         return 1;
     }
 
+    // true - идёт ожидание конвертации
+    bool isWaiting() {
+        return _wait;
+    }
+
     // прочитать температуру
     bool readTemp() {
         uint8_t buf[5];
