@@ -1,0 +1,58 @@
+#######################################
+# Syntax Coloring Map For GyverDS18
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+GyverDS18	KEYWORD1
+GyverDS18Single	KEYWORD1
+GyverDS18Array	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+# utils
+gds	KEYWORD2
+calcResolution	KEYWORD2
+calcTemp	KEYWORD2
+copyAddress	KEYWORD2
+printAddress	KEYWORD2
+
+# GyverDS18Single
+setPin	KEYWORD2
+setParasite	KEYWORD2
+getConversionTime	KEYWORD2
+setResolution	KEYWORD2
+readResolution	KEYWORD2
+readAddress	KEYWORD2
+readPower	KEYWORD2
+requestTemp	KEYWORD2
+ready	KEYWORD2
+waitReady	KEYWORD2
+readTemp	KEYWORD2
+getTempRaw	KEYWORD2
+getTempInt	KEYWORD2
+getTemp	KEYWORD2
+readRAM	KEYWORD2
+writeRAM	KEYWORD2
+copyRAM	KEYWORD2
+recallRAM	KEYWORD2
+applyResolution	KEYWORD2
+
+# GyverDS18Array
+setAddress	KEYWORD2
+amount	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+DS18_EXTERNAL	LITERAL1
+DS18_PARASITE	LITERAL1
+DS18_TCONV_9	LITERAL1
+DS18_TCONV_10	LITERAL1
+DS18_TCONV_11	LITERAL1
+DS18_TCONV_12	LITERAL1
