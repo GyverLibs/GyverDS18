@@ -17,18 +17,18 @@ void copyAddress(const uint64_t& address, uint8_t* buf) {
     }
 }
 
+static char _getChar(uint8_t b) {
+    return (char)(b + ((b > 9) ? 55 : '0'));
+}
+
 void printAddress(const uint64_t& address, Print& p, bool newline) {
     buf64 addr{address};
     p.print("0x");
     for (uint8_t i = 0; i < 8; i++) {
-        if (addr.u8[i] < 0xf) p.print(0);
-        p.print(addr.u8[i], HEX);
+        p.print(_getChar(addr.u8[i] >> 4));
+        p.print(_getChar(addr.u8[i] & 0xF));
     }
     if (newline) p.println();
-}
-
-static char _getChar(uint8_t b) {
-    return (char)(b + ((b > 9) ? 55 : '0'));
 }
 
 String addressToString(const uint64_t& address) {
