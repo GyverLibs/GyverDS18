@@ -20,7 +20,7 @@ class GyverDS18Array : protected GyverDS18 {
         _addr = addr;
         _amount = amount;
     }
-    
+
     // получить количество адресов в массиве
     uint8_t amount() {
         return _amount;
@@ -51,6 +51,7 @@ class GyverDS18Array : protected GyverDS18 {
     using GyverDS18::getTemp;
     using GyverDS18::getTempInt;
     using GyverDS18::getTempRaw;
+    using GyverDS18::isWaiting;
     using GyverDS18::ready;
     using GyverDS18::waitReady;
 
