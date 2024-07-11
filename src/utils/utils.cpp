@@ -25,8 +25,8 @@ void printAddress(const uint64_t& address, Print& p, bool newline) {
     buf64 addr{address};
     p.print("0x");
     for (uint8_t i = 0; i < 8; i++) {
-        p.print(_getChar(addr.u8[i] >> 4));
-        p.print(_getChar(addr.u8[i] & 0xF));
+        p.print(_getChar(addr.u8[7 - i] >> 4));
+        p.print(_getChar(addr.u8[7 - i] & 0xF));
     }
     if (newline) p.println();
 }
@@ -36,8 +36,8 @@ String addressToString(const uint64_t& address) {
     s.reserve(18);
     buf64 addr{address};
     for (uint8_t i = 0; i < 8; i++) {
-        s += _getChar(addr.u8[i] >> 4);
-        s += _getChar(addr.u8[i] & 0xF);
+        s += _getChar(addr.u8[7 - i] >> 4);
+        s += _getChar(addr.u8[7 - i] & 0xF);
     }
     return s;
 }

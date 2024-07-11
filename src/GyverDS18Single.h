@@ -69,8 +69,7 @@ class GyverDS18Single : public GyverOneWire {
         write(DS18_ADDR_READ);
         uint8_t crc = 0;
         gds::buf64 addr{0};
-        uint8_t i = 8;
-        while (i--) {
+        for (uint8_t i = 0; i < 8; i++) {
             uint8_t r = read();
             addr.u8[i] = r;
             _crc8(crc, r);
