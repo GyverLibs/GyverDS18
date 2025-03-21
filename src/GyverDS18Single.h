@@ -39,6 +39,7 @@ class GyverDS18Single : public GyverOneWire {
 
     // ===================== SYSTEM =====================
 
+    using GyverOneWire::reset;
     using GyverOneWire::setPin;
 
     // включить режим паразитного питания (умолч. вкл)
@@ -65,7 +66,7 @@ class GyverDS18Single : public GyverOneWire {
 
     // прочитать адрес датчика. 0 - ошибка
     uint64_t readAddress() {
-        if (!reset()) return 0;
+        if (!reset() && !reset()) return 0;  // 2x reset
         write(DS18_ADDR_READ);
         uint8_t crc = 0;
         gds::buf64 addr{0};
