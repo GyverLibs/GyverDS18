@@ -78,6 +78,130 @@ class GyverDS18Single : public GyverOneWire {
         return crc ? 0 : addr.u64;
     }
 
+    // Выполняем поиск нескольких устройств на одной шине.
+    // для этого мастер отправляет команду F0.
+    // процедура проходит в 3 этапа для раскрытия каждого бита адреса:
+    //
+    // ВСЕ ПОДЧИНЕННЫЕ устройства ОДНОВРЕМЕННО отправляют.
+    // 1) бит адреса - так как тайминг при отправке нуля составляет 60-120µs,
+    // а единицы 1-15µs, то при одновременной отправке 1 и 0 с разных устройств, придет только 0.
+    // 2) инвертированный бит адреса - если 1, то первый бит был 0
+    // у всех устройств на шине, если 0, то были устройства с 1 в адресе.
+    //
+    // мастер отправляет
+    // 3)  бит 1 или 0 для выбора устройств с кем продолжить общение
+    bool search(gds::buf64 *newAddr) {
+        uint8_t id_bit_number;
+        uint8_t last_zero, rom_byte_number;
+        bool search_result;
+        uint8_t id_bit, cmp_id_bit;
+
+        unsigned char rom_byte_mask, search_direction;
+
+        id_bit_number = 1;
+        last_zero = 0;
+        rom_byte_number = 0;
+        rom_byte_mask = 1;
+        search_result = false;
+
+        if (!_last_device_flag) { // !! длинный if !!
+
+            // сбрасываем шину, если сброс с ошибкой, то обнуляем флаги поиска
+            // и выходим
+            if (!reset()) {
+                _last_discrepancy = 0;
+                _last_device_flag = false;
+                return false;
+            }
+
+            // команда поиска всех адресов
+            write(DS18_ADDR_SEARCH);
+
+            do {
+
+                // читаем первый и второй биты
+                id_bit = readBit();
+                cmp_id_bit = readBit();
+
+                // 11 - нет устройств на шине
+                if ((id_bit) == 1 && (cmp_id_bit == 1)) {
+                    break;
+                } else {
+                    // 01 - у всех устройств бит в адресе rom 0
+                    // 10 - у всех устройств бит в адресе rom 1
+                    // 00 - есть устройства с 0 и 1
+                    if (id_bit != cmp_id_bit) {
+                        search_direction = id_bit;
+                    } else {
+                        // если мы еще не дошли до развилки с прошлого поиска,
+                        // то берем прошлое значение бита из ранее сохраненного адреса
+                        if (id_bit_number < _last_discrepancy) {
+                            search_direction = ((addr.u8[rom_byte_number] & rom_byte_mask) > 0);
+                        } else {
+                            // если дошли до развилки, то в этот раз берем 1
+                            search_direction = (id_bit_number == _last_discrepancy);
+                        }
+                        // если взяли 0, то запишем номер бита как "последний ноль"
+                        // позже мы сохраним номер бита как развилку _last_discrepancy
+                        if (search_direction == 0) {
+                            last_zero = id_bit_number;
+                        }
+                    }
+
+                    // выставляем бит в переменной адреса с помощью маски размером в байт
+                    // != для 1 и &= ~ для 0
+                    if (search_direction == 1) {
+                        addr.u8[rom_byte_number] |= rom_byte_mask;
+                    } else {
+                        addr.u8[rom_byte_number] &= ~rom_byte_mask;
+                    }
+                    // увеличиваем переменную кол-ва битов
+                    // и пушим бит в маске влево
+                    id_bit_number++;
+                    rom_byte_mask <<= 1;
+
+                }
+
+                // отправляем выбранный бит подчиненным устройствам на шине.
+                writeBit(search_direction);
+
+                // мы полностью пропушили байт нашей маски влево 00000000
+                // выставляем его опять в значение 00000001 и начинаем работу
+                // со следующим байтом адреса
+                if (rom_byte_mask == 0) {
+                    rom_byte_number++;
+                    rom_byte_mask = 1;
+                }
+            } while (rom_byte_number < 8);
+
+            // мы собрали адрес, помечаем развилку
+            if (!(id_bit_number < 65)) {
+                _last_discrepancy = last_zero;
+
+                // если развилок не было,
+                // значит это последнее устройство на шине
+                if (_last_discrepancy == 0) {
+                    _last_device_flag = true;
+                }
+                search_result = true;
+            }
+        } // конец длинного if
+
+        // адрес не найден, сбрасываем счетчики
+        // следующий вызов функции будет будто
+        // мы вызываем ее в первый раз
+        if (!search_result || !addr.u8[0]) {
+            _last_discrepancy = 0;
+            _last_device_flag = false;
+            search_result = false;
+        } else {
+        // копируем адрес во внешнюю переменную
+        for (byte i = 0; i < 8; i++)
+            newAddr->u8[i] = addr.u8[i];
+        }
+        return search_result;
+    }
+
     // прочитать питание: DS18_PARASITE - паразитное, DS18_EXTERNAL - обычное, 0 - ошибка
     uint8_t readPower() {
         return _beginSkip() ? _readPower() : 0;
@@ -176,6 +300,10 @@ class GyverDS18Single : public GyverOneWire {
     // ======================== PRIVATE ========================
    protected:
     bool _parasite = true;
+    // search
+    gds::buf64 addr{0};
+    uint8_t _last_discrepancy;
+    bool _last_device_flag;
 
     uint8_t _getConfig() {
         return ((_res - 9) << 5) | 0b00011111;

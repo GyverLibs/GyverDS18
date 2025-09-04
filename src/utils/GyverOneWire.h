@@ -65,6 +65,24 @@ class GyverOneWire {
         return 1;
     }
 
+    // записать бит
+    bool writeBit(bool data) {
+        GWIRE_CLI();
+        _write(0);
+        if (data & 1) {
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+            _write(1);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+        } else {
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+            _write(1);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+        }
+        return 1;
+    }
+
     // прочитать бит
     bool readBit() {
         GWIRE_CLI();  // cli
