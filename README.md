@@ -577,13 +577,13 @@ void setup() {
         }
     }
 
-    // 3. поиск по [индексу]
+    // 3. поиск по индексу
     {
-        gds::Search(DS_PIN).find(0).printTo(Serial);  // печать [1]
+        gds::Search(DS_PIN).find(0).printTo(Serial);  // печать [индекс 0]
 
         gds::Search s(DS_PIN);
-        s.find(1).printTo(Serial);  // печать [2]
-        uint64_t adr = s.find(2);   // как uint64_t [3]
+        s.find(1).printTo(Serial);  // печать [индекс 1]
+        uint64_t adr = s.find(2);   // как uint64_t [индекс 2]
     }
 }
 
