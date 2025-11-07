@@ -4,10 +4,10 @@ GyverDS18Single ds(2);  // пин
 void setup() {
     Serial.begin(115200);
 
-    uint64_t addr = ds.readAddress();
+    gds::Addr addr = ds.readAddress();
     if (addr) {
         Serial.print("address: ");
-        gds::printAddress(addr, Serial);
+        addr.printTo(Serial);
     } else {
         Serial.println("error");
     }

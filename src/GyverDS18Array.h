@@ -33,17 +33,17 @@ class GyverDS18Array : protected GyverDS18 {
 
     // установить разрешение (9.. 12 бит)
     bool setResolution(uint8_t res, uint8_t n) {
-        return _valid(n) ? GyverDS18::setResolution(res, _addr[n]) : 0;
+        return GyverDS18::setResolution(res, _get(n));
     }
 
     // прочитать разрешение
     uint8_t readResolution(uint8_t n) {
-        return _valid(n) ? GyverDS18::readResolution(_addr[n]) : 0;
+        return GyverDS18::readResolution(_get(n));
     }
 
     // прочитать питание: DS18_PARASITE - паразитное, DS18_EXTERNAL - обычное, 0 - ошибка
     uint8_t readPower(uint8_t n) {
-        return _valid(n) ? GyverDS18::readPower(_addr[n]) : 0;
+        return GyverDS18::readPower(_get(n));
     }
 
     // ===================== TEMP =====================
@@ -53,7 +53,16 @@ class GyverDS18Array : protected GyverDS18 {
     using GyverDS18::getTempRaw;
     using GyverDS18::isWaiting;
     using GyverDS18::ready;
+    using GyverDS18::setPeriod;
+    using GyverDS18::tick;
     using GyverDS18::waitReady;
+
+    // прочитать в массив. NAN если ошибка чтения
+    void readTemps(float* arr) {
+        for (uint8_t i = 0; i < _amount; i++) {
+            arr[i] = readTemp(i) ? getTemp() : NAN;
+        }
+    }
 
     // запросить температуру у всех
     bool requestTemp() {
@@ -62,36 +71,34 @@ class GyverDS18Array : protected GyverDS18 {
 
     // запросить температру
     bool requestTemp(uint8_t n) {
-        return _valid(n) ? GyverDS18::requestTemp(_addr[n]) : 0;
+        return GyverDS18::requestTemp(_get(n));
     }
 
     // прочитать температуру
     bool readTemp(uint8_t n) {
-        return _valid(n) ? GyverDS18::readTemp(_addr[n]) : 0;
+        return GyverDS18::readTemp(_get(n));
     }
 
     // ===================== MANUAL =====================
 
-    using GyverDS18::applyResolution;
-
     // прочитать содержимое оперативной памяти в буфер 5 байт
     bool readRAM(uint8_t* buf, uint8_t n) {
-        return _valid(n) ? GyverDS18::readRAM(buf, _addr[n]) : 0;
+        return GyverDS18::readRAM(buf, _get(n));
     }
 
     // записать данные в оперативную память (th, tl, cfg)
     bool writeRAM(uint8_t b0, uint8_t b1, uint8_t n) {
-        return _valid(n) ? GyverDS18::writeRAM(b0, b1, _addr[n]) : 0;
+        return GyverDS18::writeRAM(b0, b1, _get(n));
     }
 
     // записать содержимое оперативной памяти в EEPROM
     bool copyRAM(uint8_t n) {
-        return _valid(n) ? GyverDS18::copyRAM(_addr[n]) : 0;
+        return GyverDS18::copyRAM(_get(n));
     }
 
     // записать содержимое EEPROM в оперативную память
     bool recallRAM(uint8_t n) {
-        return _valid(n) ? GyverDS18::recallRAM(_addr[n]) : 0;
+        return GyverDS18::recallRAM(_get(n));
     }
 
     // ===================== PRIVATE =====================
@@ -100,7 +107,7 @@ class GyverDS18Array : protected GyverDS18 {
     uint64_t* _addr = nullptr;
     uint8_t _amount = 0;
 
-    bool _valid(const uint8_t& n) {
-        return (_addr && _amount && n < _amount);
+    uint64_t _get(uint8_t n) {
+        return (_addr && n < _amount) ? _addr[n] : 0;
     }
 };

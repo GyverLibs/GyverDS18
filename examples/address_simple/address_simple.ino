@@ -9,7 +9,7 @@ void setup() {
     ds.requestTemp();
 }
 void loop() {
-    if (ds.ready()) {             // измерения готовы по таймеру
+    if (ds.ready()) {             // измерения готовы по общему таймеру
         // читаем КОНКРЕТНЫЙ датчик по адресу
         if (ds.readTemp(addr)) {  // если чтение успешно
             Serial.print("temp: ");

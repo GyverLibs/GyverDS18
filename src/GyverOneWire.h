@@ -18,6 +18,11 @@
 
 class GyverOneWire {
    public:
+    GyverOneWire() {}
+    GyverOneWire(uint8_t pin) {
+        setPin(pin);
+    }
+
     // установить пин
     void setPin(uint8_t pin) {
         _pin = pin;
@@ -25,7 +30,6 @@ class GyverOneWire {
         gio::write(_pin, LOW);
     }
 
-   protected:
     // сброс шины
     bool reset() {
         if (!gio::read(_pin)) return 0;
@@ -62,7 +66,25 @@ class GyverOneWire {
             data >>= 1;
         }
         GWIRE_DELAY(1);
-        return 1;
+        return true;
+    }
+
+    // записать бит
+    bool writeBit(bool data) {
+        GWIRE_CLI();
+        _write(0);
+        if (data & 1) {
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+            _write(1);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+        } else {
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+            _write(1);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+        }
+        return true;
     }
 
     // прочитать бит
@@ -81,7 +103,7 @@ class GyverOneWire {
     }
 
     // прочитать байт
-    uint8_t read() {
+    uint8_t readByte() {
         uint8_t data = 0;
         for (uint8_t i = 0; i < 8; i++) {
             data >>= 1;
@@ -108,7 +130,6 @@ class GyverOneWire {
     bool _pulled = 0;
 
     void _write(bool v) {
-        if (v) gio::mode(_pin, INPUT);
-        else gio::mode(_pin, OUTPUT);
+        gio::mode(_pin, v ? INPUT : OUTPUT);
     }
 };
