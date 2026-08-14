@@ -36,8 +36,14 @@ class Search : private GyverOneWire, public gds::Addr {
 
     // найти по индексу
     gds::Addr find(uint8_t n) {
-        ++n;
-        while (n-- && search());
+        while (search()) {
+            if (!n) {
+                stop();
+                return *this;
+            }
+            --n;
+        }
+        addr = 0;
         stop();
         return *this;
     }
@@ -123,7 +129,7 @@ class Search : private GyverOneWire, public gds::Addr {
         }
 
         // адрес не найден, сбрасываем счетчики
-        if (!res || !p[0]) {
+        if (!res || !p[0] || !_crcValid(p)) {
             stop();
             return false;
         }
@@ -140,6 +146,14 @@ class Search : private GyverOneWire, public gds::Addr {
    private:
     bool _last_flag = false;
     uint8_t _last_discr = 0;
+
+    static bool _crcValid(const uint8_t* data) {
+        uint8_t crc = 0;
+        for (uint8_t b = 0; b < 8; b++) {
+            gds::crc8(crc, data[b]);
+        }
+        return !crc;
+    }
 };
 
 }  // namespace gds

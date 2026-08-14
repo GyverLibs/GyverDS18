@@ -55,13 +55,21 @@ class GyverDS18Array : protected GyverDS18 {
     using GyverDS18::ready;
     using GyverDS18::setPeriod;
     using GyverDS18::tick;
+    using GyverDS18::initialized;
     using GyverDS18::waitReady;
 
-    // прочитать в массив. NAN если ошибка чтения
-    void readTemps(float* arr) {
+    // прочитать в массив. false если ошибка чтения хотя бы одного датчика
+    bool readTemps(float* arr) {
+        bool ok = true;
         for (uint8_t i = 0; i < _amount; i++) {
-            arr[i] = readTemp(i) ? getTemp() : NAN;
+            if (readTemp(i)) {
+                arr[i] = getTemp();
+            } else {
+                arr[i] = NAN;
+                ok = false;
+            }
         }
+        return ok;
     }
 
     // запросить температуру у всех

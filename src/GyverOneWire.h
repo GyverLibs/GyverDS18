@@ -13,8 +13,16 @@
 #define GWIRE_READ_SLOT 70
 
 #define GWIRE_DELAY(us) delayMicroseconds(us)
+
+#ifdef __AVR__
+#define GWIRE_CLI()             \
+    uint8_t _gwire_sreg = SREG; \
+    noInterrupts()
+#define GWIRE_SEI() SREG = _gwire_sreg
+#else
 #define GWIRE_CLI() noInterrupts()
 #define GWIRE_SEI() interrupts()
+#endif
 
 class GyverOneWire {
    public:
@@ -25,9 +33,9 @@ class GyverOneWire {
 
     // установить пин
     void setPin(uint8_t pin) {
+        if (_pulled) pullup(false);
         _pin = pin;
         gio::init(_pin, INPUT);
-        gio::write(_pin, LOW);
     }
 
     // сброс шины
@@ -49,41 +57,19 @@ class GyverOneWire {
 
     // записать байт
     bool write(uint8_t data) {
-        for (uint8_t i = 0; i < 8; i++) {
-            GWIRE_CLI();
-            _write(0);
-            if (data & 1) {
-                GWIRE_DELAY(GWIRE_WRITE_WAIT);
-                _write(1);
-                GWIRE_SEI();
-                GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
-            } else {
-                GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
-                _write(1);
-                GWIRE_SEI();
-                GWIRE_DELAY(GWIRE_WRITE_WAIT);
-            }
-            data >>= 1;
-        }
-        GWIRE_DELAY(1);
-        return true;
+        return _writeByte(data, false);
     }
 
+   protected:
+    // записать байт и включить активную подтяжку сразу после последнего бита
+    bool writePower(uint8_t data) {
+        return _writeByte(data, true);
+    }
+
+   public:
     // записать бит
     bool writeBit(bool data) {
-        GWIRE_CLI();
-        _write(0);
-        if (data & 1) {
-            GWIRE_DELAY(GWIRE_WRITE_WAIT);
-            _write(1);
-            GWIRE_SEI();
-            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
-        } else {
-            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
-            _write(1);
-            GWIRE_SEI();
-            GWIRE_DELAY(GWIRE_WRITE_WAIT);
-        }
+        _writeBit(data, false);
         return true;
     }
 
@@ -131,5 +117,32 @@ class GyverOneWire {
 
     void _write(bool v) {
         gio::mode(_pin, v ? INPUT : OUTPUT);
+    }
+
+    void _writeBit(bool data, bool power) {
+        GWIRE_CLI();
+        _write(0);
+        if (data) {
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+            _write(1);
+            if (power) pullup(true);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+        } else {
+            GWIRE_DELAY(GWIRE_WRITE_SLOT - GWIRE_WRITE_WAIT);
+            _write(1);
+            if (power) pullup(true);
+            GWIRE_SEI();
+            GWIRE_DELAY(GWIRE_WRITE_WAIT);
+        }
+    }
+
+    bool _writeByte(uint8_t data, bool power) {
+        for (uint8_t i = 0; i < 8; i++) {
+            _writeBit(data & 1, power && i == 7);
+            data >>= 1;
+        }
+        if (!power) GWIRE_DELAY(1);
+        return true;
     }
 };

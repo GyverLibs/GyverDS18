@@ -48,14 +48,15 @@ class GyverDS18 : protected GyverDS18Single {
     using GyverDS18Single::ready;
     using GyverDS18Single::requestTemp;
     using GyverDS18Single::setPeriod;
+    using GyverDS18Single::initialized;
     using GyverDS18Single::waitReady;
 
     // автоматический запрос по таймеру для всех, вызывать в loop. Вернёт DS18_READY (0) по готовности
     uint8_t tick() {
         if (_tmr.elapsed()) {
-            requestTemp();
+            bool ok = requestTemp();
             _tmr.start();
-            return DS18_READY;
+            return ok ? DS18_READY : DS18_ERROR;
         }
         return DS18_IDLE;
     }
@@ -83,7 +84,7 @@ class GyverDS18 : protected GyverDS18Single {
 
     // записать данные в оперативную память (th, tl, res)
     bool writeRAM(uint8_t th, uint8_t tl, uint8_t res, const uint64_t& addr) {
-        return _beginAddr(addr) ? _writeRAM(th, tl, res) : false;
+        return (res && _beginAddr(addr)) ? _writeRAM(th, tl, res) : false;
     }
 
     // записать данные в оперативную память (th, tl)

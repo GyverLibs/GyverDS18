@@ -3,6 +3,8 @@
 
 namespace gds {
 
+void crc8(uint8_t& crc, uint8_t data);
+
 struct RAM {
     uint8_t t_lsb;
     uint8_t t_msb;
@@ -11,10 +13,10 @@ struct RAM {
     uint8_t cfg;
 
     int16_t getTemp() {
-        return t_lsb | (t_msb << 8);
+        return int16_t(uint16_t(t_lsb) | (uint16_t(t_msb) << 8));
     }
     uint8_t getRes() {
-        return ((cfg >> 5) & 0xff) + 9;
+        return ((cfg >> 5) & 0x03) + 9;
     }
 };
 
@@ -117,10 +119,5 @@ void printAddress(const uint64_t& address, Print& p, bool newline = true);
 
 // вывести адрес в String
 String addressToString(const uint64_t& address);
-
-union buf64 {
-    uint64_t u64;
-    uint8_t u8[8];
-};
 
 }  // namespace gds

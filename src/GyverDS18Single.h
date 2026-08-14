@@ -10,7 +10,8 @@
 #define DS18_IDLE 1
 #define DS18_ERROR 2
 
-#define DS18_BAD_TEMP 0
+#define DS18_NO_TEMP -32768
+#define DS18_INIT_TEMP 0x0550
 
 #define DS18_PWR_ERROR 0
 #define DS18_EXTERNAL 1
@@ -53,6 +54,7 @@ class GyverDS18Single : protected GyverOneWire {
 
     // включить режим паразитного питания (умолч. вкл)
     void setParasite(bool parasite) {
+        if (!parasite) pullup(false);
         _parasite = parasite;
     }
 
@@ -84,7 +86,7 @@ class GyverDS18Single : protected GyverOneWire {
         for (uint8_t i = 0; i < 8; i++) {
             uint8_t r = readByte();
             ((uint8_t*)&addr)[i] = r;
-            _crc8(crc, r);
+            gds::crc8(crc, r);
         }
         return crc ? 0 : addr;
     }
@@ -141,22 +143,30 @@ class GyverDS18Single : protected GyverOneWire {
     // прочитать температуру
     bool readTemp() {
         gds::RAM ram;
-        return readRAM(&ram) ? _saveTemp(ram.getTemp()) : false;
+        if (!readRAM(&ram)) return false;
+
+        int16_t temp = ram.getTemp();
+        return (temp == DS18_INIT_TEMP) ? initialized() : _saveTemp(temp);
     }
 
     // получить "сырую" температуру (умножена на 16)
-    int16_t getTempRaw() {
+    int16_t getTempRaw() const {
         return _tbuf;
     }
 
     // получить int температуру
-    int16_t getTempInt() {
-        return _tbuf >> 4;
+    int16_t getTempInt() const {
+        return _tbuf / 16;
     }
 
     // получить float температуру
-    float getTemp() {
-        return _tbuf / 16.0;
+    float getTemp() const {
+        return initialized() ? _tbuf / 16.0 : NAN;
+    }
+
+    // было хотя бы одно валидное чтение
+    bool initialized() const {
+        return _tbuf != DS18_NO_TEMP;
     }
 
     // ===================== MANUAL =====================
@@ -171,7 +181,7 @@ class GyverDS18Single : protected GyverOneWire {
 
     // записать данные в оперативную память (th, tl, res)
     bool writeRAM(uint8_t th, uint8_t tl, uint8_t res) {
-        return _beginSkip() ? _writeRAM(th, tl, res) : false;
+        return (res && _beginSkip()) ? _writeRAM(th, tl, res) : false;
     }
 
     // записать данные в оперативную память (th, tl)
@@ -191,6 +201,7 @@ class GyverDS18Single : protected GyverOneWire {
 
     // применить разрешение
     uint8_t applyResolution(uint8_t res) {
+        res = constrain(res, 9, 12);
         _tmr.setPeriod(DS18_TCONV_RES(res));
         return res;
     }
@@ -209,13 +220,13 @@ class GyverDS18Single : protected GyverOneWire {
         return readBit() ? DS18_EXTERNAL : DS18_PARASITE;
     }
     bool _saveTemp(int16_t temp) {
-        if (temp == 0x0550) return false;  // пропустить 85 градусов
+        if (temp == DS18_INIT_TEMP) return false;
         _tbuf = temp;
         return true;
     }
     bool _requestTemp() {
-        write(DS18_CONVERT);
-        if (_parasite) pullup(true);
+        if (_parasite) writePower(DS18_CONVERT);
+        else write(DS18_CONVERT);
         _tmr.start();
         return true;
     }
@@ -227,11 +238,12 @@ class GyverDS18Single : protected GyverOneWire {
             uint8_t r = readByte();
             if (i < 5) buf[i] = r;
             if (r) notEmpty = true;
-            _crc8(crc, r);
+            gds::crc8(crc, r);
         }
         return notEmpty && !crc;
     }
     bool _writeRAM(uint8_t b0, uint8_t b1, uint8_t res) {
+        res = constrain(res, 9, 12);
         write(DS18_WRITE_RAM);
         write(b0);
         write(b1);
@@ -239,40 +251,14 @@ class GyverDS18Single : protected GyverOneWire {
         return true;
     }
     bool _copyRAM() {
-        write(DS18_COPY_RAM);
         if (_parasite) {
-            pullup(true);
+            writePower(DS18_COPY_RAM);
             delay(10);
             pullup(false);
-        }
+        } else write(DS18_COPY_RAM);
         return true;
     }
 
    private:
-    int16_t _tbuf = DS18_BAD_TEMP;
-
-    void _crc8(uint8_t& crc, uint8_t data) {
-#ifdef __AVR__
-        uint8_t counter = 0;
-        uint8_t buffer = 0;
-        asm volatile(
-            "EOR %[crc_out], %[data_in] \n\t"
-            "LDI %[counter], 8          \n\t"
-            "LDI %[buffer], 0x8C        \n\t"
-            "_loop_start_%=:            \n\t"
-            "LSR %[crc_out]             \n\t"
-            "BRCC _loop_end_%=          \n\t"
-            "EOR %[crc_out], %[buffer]  \n\t"
-            "_loop_end_%=:              \n\t"
-            "DEC %[counter]             \n\t"
-            "BRNE _loop_start_%="
-            : [crc_out] "=r"(crc), [counter] "=d"(counter), [buffer] "=d"(buffer)
-            : [crc_in] "0"(crc), [data_in] "r"(data));
-#else
-        for (uint8_t i = 0; i < 8; i++) {
-            crc = ((crc ^ data) & 1) ? (crc >> 1) ^ 0x8C : (crc >> 1);
-            data >>= 1;
-        }
-#endif
-    }
+    int16_t _tbuf = DS18_NO_TEMP;
 };
