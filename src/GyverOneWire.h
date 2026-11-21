@@ -36,6 +36,7 @@ class GyverOneWire {
         if (_pulled) pullup(false);
         _pin = pin;
         gio::init(_pin, INPUT);
+        gio::low(_pin);
     }
 
     // сброс шины
